@@ -31,10 +31,10 @@ export const createPhone = async () => {
     store.messages.push('WebSocket opened');
     onOpen();
   });
-  const eventEmitter = new EventEmitter();
+  const messageListener = new EventEmitter();
   ws.addEventListener('message', (e: any) => {
     store.messages.push('Receiving...\n' + e.data);
-    eventEmitter.emit(InboundMessage.fromString(e.data));
+    messageListener.emit(InboundMessage.fromString(e.data));
   });
   const oldSend = ws.send.bind(ws);
   ws.send = (arg: any) => {
@@ -54,10 +54,10 @@ export const createPhone = async () => {
         ) {
           return; // ignore
         }
-        eventEmitter.off(messageListerner);
+        messageListener.off(messageListerner);
         resolve(inboundMessage);
       };
-      eventEmitter.on(messageListerner);
+      messageListener.on(messageListerner);
     });
   };
 
@@ -81,38 +81,15 @@ export const createPhone = async () => {
     send(newMessage);
   };
 
-  eventEmitter.on(async (inboundMessage: InboundMessage) => {
+  messageListener.on(async (inboundMessage: InboundMessage) => {
     if (inboundMessage.subject.startsWith('INVITE sip:')) {
       const peerConnection = new RTCPeerConnection({
         iceServers: sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })), // todo: this line is optional?
-        // iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       });
-
-      const eventNames = [
-        'addstream',
-        'connectionstatechange',
-        'datachannel',
-        'icecandidate',
-        'icecandidateerror',
-        'iceconnectionstatechange',
-        'icegatheringstatechange',
-        'negotiationneeded',
-        'removestream',
-        'signalingstatechange',
-        'track',
-      ];
-      for (const eventName of eventNames) {
-        peerConnection.addEventListener(eventName, (...args) => {
-          console.log(...args);
-        });
-      }
-
-      // peerConnection.addEventListener('connectionstatechange', (e: any) => {
-      //   console.log(peerConnection.connectionState);
-      // });
-
       peerConnection.addEventListener('track', (e: any) => {
-        (document.getElementById('remoteAudio') as HTMLAudioElement).srcObject = e.streams[0];
+        const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
+        remoteAudio.srcObject = e.streams[0];
+        remoteAudio.play();
       });
       await peerConnection.setRemoteDescription({
         sdp: inboundMessage.body,
