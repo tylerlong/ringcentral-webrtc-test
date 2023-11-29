@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "lint": "eslint --fix '**/*.{ts,tsx,js,jsx}' && prettier --write . && sort-package-json",
-    "serve": "rm -rf .parcel-cache && parcel src/index.html --dist-dir docs --no-hmr"
+    "serve": "rm -rf .parcel-cache docs && parcel src/index.html --dist-dir docs --no-hmr"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

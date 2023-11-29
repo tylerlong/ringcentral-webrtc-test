@@ -84,11 +84,35 @@ export const createPhone = async () => {
   eventEmitter.on(async (inboundMessage: InboundMessage) => {
     if (inboundMessage.subject.startsWith('INVITE sip:')) {
       const peerConnection = new RTCPeerConnection({
-        iceServers: sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })),
+        iceServers: sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })), // todo: this line is optional?
+        // iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
       });
 
+      const eventNames = [
+        'addstream',
+        'connectionstatechange',
+        'datachannel',
+        'icecandidate',
+        'icecandidateerror',
+        'iceconnectionstatechange',
+        'icegatheringstatechange',
+        'negotiationneeded',
+        'removestream',
+        'signalingstatechange',
+        'track',
+      ];
+      for (const eventName of eventNames) {
+        peerConnection.addEventListener(eventName, (...args) => {
+          console.log(...args);
+        });
+      }
+
+      // peerConnection.addEventListener('connectionstatechange', (e: any) => {
+      //   console.log(peerConnection.connectionState);
+      // });
+
       peerConnection.addEventListener('track', (e: any) => {
-        console.log('new track', e);
+        (document.getElementById('remoteAudio') as HTMLAudioElement).srcObject = e.streams[0];
       });
       await peerConnection.setRemoteDescription({
         sdp: inboundMessage.body,
