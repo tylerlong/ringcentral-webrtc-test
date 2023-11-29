@@ -1,101 +1,29 @@
 import type SipInfoResponse from '@rc-ex/core/lib/definitions/SipInfoResponse';
-import md5 from 'blueimp-md5';
 import { v4 as uuid } from 'uuid';
+import crypto from 'crypto';
 
-const generateResponse = (
-  username: string,
-  password: string,
-  realm: string,
-  method: string,
-  uri: string,
-  nonce: string,
-  // eslint-disable-next-line max-params
-) => {
-  const ha1 = md5(username + ':' + realm + ':' + password);
-  const ha2 = md5(method + ':' + uri);
-  const response = md5(ha1 + ':' + nonce + ':' + ha2);
+const md5 = (s: string) => crypto.createHash('md5').update(s).digest('hex');
+
+const generateResponse = (sipInfo: SipInfoResponse, method: string, nonce: string) => {
+  const ha1 = md5(`${sipInfo.authorizationId}:${sipInfo.domain}:${sipInfo.password}`);
+  const ha2 = md5(`${method}:sip:${sipInfo.domain}`);
+  const response = md5(`${ha1}:${nonce}:${ha2}`);
   return response;
 };
 
 /*
 Sample input:
-const username = '802396666666'
-const password = 'xxxxxx'
-const realm = 'sip.ringcentral.com'
+const sipInfo = {
+  "password": "Li12x8E",
+  "authorizationId": "801559893004",
+  "domain": "sip.devtest.ringcentral.com",
+}
 const method = 'REGISTER'
-const nonce = 'yyyyyy'
+const nonce = 'ZWaikWVmoWVk71y4c8akwQ5yWzg/ZNiV'
 */
 export const generateAuthorization = (sipInfo: SipInfoResponse, method: string, nonce: string) => {
-  const { authorizationId: username, password, domain: realm } = sipInfo;
-  return `Digest algorithm=MD5, username="${username}", realm="${realm}", nonce="${nonce}", uri="sip:${realm}", response="${generateResponse(
-    username,
-    password,
-    realm,
-    method,
-    `sip:${realm}`,
-    nonce,
-  )}"`;
-};
-
-/*
-Sample output:
-Proxy-Authorization: Digest algorithm=MD5, username="802396666666", realm="sip.ringcentral.com", nonce="yyyyyyy", uri="sip:+16508888888@sip.ringcentral.com", response="zzzzzzzzz"
-*/
-// eslint-disable-next-line max-params
-export const generateProxyAuthorization = (
-  sipInfo: SipInfoResponse,
-  method: string,
-  targetUser: string,
-  nonce: string,
-  // eslint-disable-next-line max-params
-) => {
-  const { authorizationId: username, password, domain: realm } = sipInfo;
-  return `Digest algorithm=MD5, username="${username}", realm="${realm}", nonce="${nonce}", uri="sip:${targetUser}@${realm}", response="${generateResponse(
-    username,
-    password,
-    realm,
-    method,
-    `sip:${targetUser}@${realm}`,
-    nonce,
-  )}"`;
+  const response = generateResponse(sipInfo, method, nonce);
+  return `Digest algorithm=MD5, username="${sipInfo.authorizationId}", realm="${sipInfo.domain}", nonce="${nonce}", uri="sip:${sipInfo.domain}", response="${response}"`;
 };
 
 export const branch = () => 'z9hG4bK' + uuid();
-
-export const enableWebSocketDebugging = (ws: WebSocket) => {
-  ws.addEventListener('message', (e: any) => {
-    console.log(`\n***** WebSocket Receive - ${new Date()} - ${Date.now()} *****`);
-    console.log(e.data);
-    console.log('***** WebSocket Receive - end *****\n');
-  });
-  const send = ws.send.bind(ws);
-  ws.send = (arg: any) => {
-    console.log(`\n***** WebSocket Send - ${new Date()} - ${Date.now()} *****`);
-    console.log(arg);
-    console.log('***** WebSocket Send - end *****\n');
-    send(arg);
-  };
-};
-
-export const enableWebRtcDebugging = (rtcPeerConnection: RTCPeerConnection) => {
-  const eventNames = [
-    'addstream',
-    'connectionstatechange',
-    'datachannel',
-    'icecandidate',
-    'iceconnectionstatechange',
-    'icegatheringstatechange',
-    'identityresult',
-    'negotiationneeded',
-    'removestream',
-    'signalingstatechange',
-    'track',
-  ];
-  for (const eventName of eventNames) {
-    rtcPeerConnection.addEventListener(eventName, (...args) => {
-      console.log(`\n****** RTCPeerConnection "${eventName}" event - ${new Date()} - ${Date.now()} *****`);
-      console.log(...args);
-      console.log(`****** RTCPeerConnection "${eventName}" event - end *****\n`);
-    });
-  }
-};
