@@ -1,48 +1,75 @@
-import RingCentral from '@rc-ex/core';
+import type RingCentral from '@rc-ex/core';
 import { v4 as uuid } from 'uuid';
-import EventEmitter from 'manate/event-emitter';
+import type SipInfoResponse from '@rc-ex/core/lib/definitions/SipInfoResponse';
+import { EventEmitter } from 'events';
 
-import store from './store';
 import type { OutboundMessage } from './sip-message';
 import { InboundMessage, RequestMessage, ResponseMessage } from './sip-message';
 import { branch, generateAuthorization } from './utils';
 
-export const createPhone = async () => {
-  store.messages.push('Creating phone...');
-  const rc = new RingCentral({
-    server: process.env.RINGCENTRAL_SERVER_URL,
-    clientId: process.env.RINGCENTRAL_CLIENT_ID,
-    clientSecret: process.env.RINGCENTRAL_CLIENT_SECRET,
-  });
-  await rc.authorize({ jwt: process.env.RINGCENTRAL_JWT_TOKEN });
-  store.messages.push(rc.token.access_token);
-  const r = await rc
-    .restapi()
-    .clientInfo()
-    .sipProvision()
-    .post({
-      sipInfo: [{ transport: 'WSS' }],
-    });
-  store.messages.push(JSON.stringify(r, null, 2));
-  const sipInfo = r.sipInfo[0];
+class Softphone extends EventEmitter {
+  public rc: RingCentral;
+  public sipInfo: SipInfoResponse;
+  public ws: WebSocket;
+  public fakeDomain = uuid() + '.invalid';
+  public fakeEmail = uuid() + '@' + this.fakeDomain;
+  public fromTag = uuid();
+  public callId = uuid();
 
-  const ws = new WebSocket('wss://' + sipInfo.outboundProxy, 'sip');
-  ws.addEventListener('open', () => {
-    store.messages.push('WebSocket opened');
-    onOpen();
-  });
-  const messageListener = new EventEmitter();
-  ws.addEventListener('message', (e: any) => {
-    store.messages.push('Receiving...\n' + e.data);
-    messageListener.emit(InboundMessage.fromString(e.data));
-  });
-  const oldSend = ws.send.bind(ws);
-  ws.send = (arg: any) => {
-    store.messages.push('Sending...\n' + arg);
-    oldSend(arg);
-  };
-  const send = (message: OutboundMessage) => {
-    ws.send(message.toString());
+  public constructor(rc: RingCentral) {
+    super();
+    this.rc = rc;
+  }
+  public async register() {
+    const r = await this.rc
+      .restapi()
+      .clientInfo()
+      .sipProvision()
+      .post({
+        sipInfo: [{ transport: 'WSS' }],
+      });
+    this.sipInfo = r.sipInfo[0];
+    this.ws = new WebSocket('wss://' + this.sipInfo.outboundProxy, 'sip');
+    this.ws.addEventListener('open', (e) => {
+      this.emit('wsOpen', e);
+    });
+    this.ws.addEventListener('message', (e) => {
+      this.emit('wsMessage', e.data);
+      this.emit('message', InboundMessage.fromString(e.data));
+    });
+    const oldSend = this.ws.send.bind(this.ws);
+    this.ws.send = (arg: any) => {
+      this.emit('wsSend', arg);
+      oldSend(arg);
+    };
+
+    const openHandler = async () => {
+      this.off('wsOpen', openHandler);
+      const requestMessage = new RequestMessage(`REGISTER sip:${this.sipInfo.domain} SIP/2.0`, {
+        'Call-ID': this.callId,
+        Contact: `<sip:${this.fakeEmail};transport=ws>;expires=600`,
+        From: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>;tag=${this.fromTag}`,
+        To: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>`,
+        Via: `SIP/2.0/WSS ${this.fakeDomain};branch=${branch()}`,
+      });
+      const inboundMessage = await this.send(requestMessage);
+      const wwwAuth = inboundMessage.headers['Www-Authenticate'] || inboundMessage!.headers['WWW-Authenticate'];
+      const nonce = wwwAuth.match(/, nonce="(.+?)"/)![1];
+      const newMessage = requestMessage.fork();
+      newMessage.headers.Authorization = generateAuthorization(this.sipInfo, 'REGISTER', nonce);
+      this.send(newMessage);
+    };
+    this.on('wsOpen', openHandler);
+
+    this.on('message', async (inboundMessage: InboundMessage) => {
+      if (inboundMessage.subject.startsWith('INVITE sip:')) {
+        this.emit('invite', inboundMessage);
+      }
+    });
+  }
+
+  public send(message: OutboundMessage) {
+    this.ws.send(message.toString());
     return new Promise<InboundMessage>((resolve) => {
       const messageListerner = (inboundMessage: InboundMessage) => {
         if (inboundMessage.headers.CSeq !== message.headers.CSeq) {
@@ -54,59 +81,39 @@ export const createPhone = async () => {
         ) {
           return; // ignore
         }
-        messageListener.off(messageListerner);
+        this.off('message', messageListerner);
         resolve(inboundMessage);
       };
-      messageListener.on(messageListerner);
+      this.on('message', messageListerner);
     });
-  };
+  }
 
-  const fakeDomain = uuid() + '.invalid';
-  const fakeEmail = uuid() + '@' + fakeDomain;
-  const fromTag = uuid();
-  const callId = uuid();
-  const onOpen = async () => {
-    const requestMessage = new RequestMessage(`REGISTER sip:${sipInfo.domain} SIP/2.0`, {
-      'Call-ID': callId,
-      Contact: `<sip:${fakeEmail};transport=ws>;expires=600`,
-      From: `<sip:${sipInfo.username}@${sipInfo.domain}>;tag=${fromTag}`,
-      To: `<sip:${sipInfo.username}@${sipInfo.domain}>`,
-      Via: `SIP/2.0/WSS ${fakeDomain};branch=${branch()}`,
+  public async answer(inviteMessage: InboundMessage) {
+    const peerConnection = new RTCPeerConnection({
+      iceServers: this.sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })), // todo: this line is optional?
     });
-    const inboundMessage = await send(requestMessage);
-    const wwwAuth = inboundMessage.headers['Www-Authenticate'] || inboundMessage!.headers['WWW-Authenticate'];
-    const nonce = wwwAuth.match(/, nonce="(.+?)"/)![1];
-    const newMessage = requestMessage.fork();
-    newMessage.headers.Authorization = generateAuthorization(sipInfo, 'REGISTER', nonce);
-    send(newMessage);
-  };
+    peerConnection.addEventListener('track', (e: any) => {
+      const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
+      remoteAudio.srcObject = e.streams[0];
+      remoteAudio.play();
+    });
+    await peerConnection.setRemoteDescription({
+      sdp: inviteMessage.body,
+      type: 'offer',
+    });
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    const newMessage = new ResponseMessage(
+      inviteMessage,
+      200,
+      {
+        Contact: `<sip:${this.fakeEmail};transport=ws>`,
+        'Content-Type': 'application/sdp',
+      },
+      peerConnection.localDescription!.sdp,
+    );
+    this.send(newMessage);
+  }
+}
 
-  messageListener.on(async (inboundMessage: InboundMessage) => {
-    if (inboundMessage.subject.startsWith('INVITE sip:')) {
-      const peerConnection = new RTCPeerConnection({
-        iceServers: sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })), // todo: this line is optional?
-      });
-      peerConnection.addEventListener('track', (e: any) => {
-        const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
-        remoteAudio.srcObject = e.streams[0];
-        remoteAudio.play();
-      });
-      await peerConnection.setRemoteDescription({
-        sdp: inboundMessage.body,
-        type: 'offer',
-      });
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      const newMessage = new ResponseMessage(
-        inboundMessage,
-        200,
-        {
-          Contact: `<sip:${fakeEmail};transport=ws>`,
-          'Content-Type': 'application/sdp',
-        },
-        peerConnection.localDescription!.sdp,
-      );
-      send(newMessage);
-    }
-  });
-};
+export default Softphone;
