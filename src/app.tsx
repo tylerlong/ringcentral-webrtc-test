@@ -1,33 +1,20 @@
-import React from 'react';
-import { Button, Space, Typography } from 'antd';
+import React, { useEffect } from 'react';
+import { Typography } from 'antd';
 import { auto } from 'manate/react';
 
 import type { Store } from './store';
+import { createPhone } from './softphone';
 
-const { Text, Title } = Typography;
+const { Title } = Typography;
 
 const App = (props: { store: Store }) => {
+  useEffect(() => {
+    createPhone();
+  }, []);
   const { store } = props;
   const render = () => (
     <>
-      <Title>Untitled App</Title>
-      <Space>
-        <Button
-          onClick={() => {
-            store.count -= 1;
-          }}
-        >
-          -
-        </Button>
-        <Text>{store.count}</Text>
-        <Button
-          onClick={() => {
-            store.count += 1;
-          }}
-        >
-          +
-        </Button>
-      </Space>
+      <Title>{store.message}</Title>
     </>
   );
   return auto(render, props);
