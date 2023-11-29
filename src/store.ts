@@ -1,7 +1,7 @@
 import { manage } from 'manate';
 
 export class Store {
-  public message = 'Hello, world!';
+  public messages = ['Hello, world!'];
 }
 
 const store = manage(new Store());

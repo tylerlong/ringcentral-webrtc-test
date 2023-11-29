@@ -1,11 +1,8 @@
 import React, { useEffect } from 'react';
-import { Typography } from 'antd';
 import { auto } from 'manate/react';
 
 import type { Store } from './store';
 import { createPhone } from './softphone';
-
-const { Title } = Typography;
 
 const App = (props: { store: Store }) => {
   useEffect(() => {
@@ -14,7 +11,7 @@ const App = (props: { store: Store }) => {
   const { store } = props;
   const render = () => (
     <>
-      <Title>{store.message}</Title>
+      <pre>{store.messages.join('\n\n')}</pre>
     </>
   );
   return auto(render, props);
