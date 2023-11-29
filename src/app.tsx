@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { auto } from 'manate/react';
 import { Button } from 'antd';
 import RingCentral from '@rc-ex/core';
+import { Typography } from 'antd';
 
 import type { Store } from './store';
 import Softphone from './softphone';
@@ -32,17 +33,20 @@ const App = (props: { store: Store }) => {
     initSoftphone();
   }, []);
 
-  // scroll to bottom on new messages
-  useEffect(() => {
-    window.scrollTo(0, document.body.scrollHeight);
-  }, [props.store.messages.length]);
-
   const { store } = props;
   const render = () => (
     <>
-      <pre>{store.messages.join('\n\n')}</pre>
+      <Typography.Title>RingCentral WebRTC Demo</Typography.Title>
       {store.inviteMessage && (
-        <Button type="primary" block={true} onClick={() => store.answerCall(softphone)}>
+        <Button
+          size="large"
+          type="primary"
+          block={true}
+          onClick={() => {
+            softphone.answer(store.inviteMessage);
+            store.inviteMessage = undefined;
+          }}
+        >
           Answer the call
         </Button>
       )}
