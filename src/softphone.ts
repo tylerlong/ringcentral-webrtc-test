@@ -83,7 +83,13 @@ export const createPhone = async () => {
 
   eventEmitter.on(async (inboundMessage: InboundMessage) => {
     if (inboundMessage.subject.startsWith('INVITE sip:')) {
-      const peerConnection = new RTCPeerConnection();
+      const peerConnection = new RTCPeerConnection({
+        iceServers: sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })),
+      });
+
+      peerConnection.addEventListener('track', (e: any) => {
+        console.log('new track', e);
+      });
       await peerConnection.setRemoteDescription({
         sdp: inboundMessage.body,
         type: 'offer',
