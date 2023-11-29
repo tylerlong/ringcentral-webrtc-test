@@ -1,6 +1,6 @@
 import SipMessage from '../sip-message';
 
-class OutboundSipMessage extends SipMessage {
+class OutboundMessage extends SipMessage {
   public constructor(subject = '', headers = {}, body = '') {
     super(subject, headers, body);
     this.headers['Content-Length'] = this.body.length.toString();
@@ -8,4 +8,4 @@ class OutboundSipMessage extends SipMessage {
   }
 }
 
-export default OutboundSipMessage;
+export default OutboundMessage;

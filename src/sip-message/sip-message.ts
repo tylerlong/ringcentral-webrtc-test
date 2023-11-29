@@ -1,10 +1,8 @@
-interface Dict {
-  [key: string]: string;
-}
-
 class SipMessage {
   public subject: string;
-  public headers: Dict;
+  public headers: {
+    [key: string]: string;
+  };
   public body: string;
 
   public constructor(subject = '', headers = {}, body = '') {

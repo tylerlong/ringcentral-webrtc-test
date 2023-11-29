@@ -1,4 +1,5 @@
-export { default as RequestSipMessage } from './outbound/request-sip-message';
-export { default as ResponseSipMessage } from './outbound/response-sip-message';
-export { default as InboundSipMessage } from './inbound/inbound-sip-message';
+export { default as RequestMessage } from './outbound/request-message';
+export { default as ResponseMessage } from './outbound/response-message';
+export { default as OutboundMessage } from './outbound';
+export { default as InboundMessage } from './inbound';
 export { default as SipMessage } from './sip-message';

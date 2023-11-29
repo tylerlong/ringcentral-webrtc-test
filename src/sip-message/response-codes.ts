@@ -1,9 +1,7 @@
 // Ref: https://en.wikipedia.org/wiki/List_of_SIP_response_codes'
-interface ResponseCodes {
+const responseCodes: {
   [key: number]: string;
-}
-
-const responseCodes: ResponseCodes = {
+} = {
   100: 'Trying',
   180: 'Ringing',
   181: 'Call is Being Forwarded',
@@ -41,8 +39,10 @@ const responseCodes: ResponseCodes = {
   422: 'Session Interval Too Small',
   423: 'Interval Too Brief',
   424: 'Bad Location Information',
+  425: 'Bad Alert Message',
   428: 'Use Identity Header',
   429: 'Provide Referrer Identity',
+  430: 'Flow Failed',
   433: 'Anonymity Disallowed',
   436: 'Bad Identity-Info',
   437: 'Unsupported Certificate',
@@ -71,12 +71,14 @@ const responseCodes: ResponseCodes = {
   504: 'Server Time-out',
   505: 'Version Not Supported',
   513: 'Message Too Large',
+  555: 'Push Notification Service Not Supported',
   580: 'Precondition Failure',
   600: 'Busy Everywhere',
   603: 'Decline',
   604: 'Does Not Exist Anywhere',
   606: 'Not Acceptable',
   607: 'Unwanted',
+  608: 'Rejected',
 };
 
 export default responseCodes;

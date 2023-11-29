@@ -1,6 +1,6 @@
 import SipMessage from '../sip-message';
 
-class InboundSipMessage extends SipMessage {
+class InboundMessage extends SipMessage {
   public static fromString(str: string) {
     const sipMessage = new SipMessage();
     const [init, ...body] = str.split('\r\n\r\n');
@@ -12,4 +12,4 @@ class InboundSipMessage extends SipMessage {
   }
 }
 
-export default InboundSipMessage;
+export default InboundMessage;
