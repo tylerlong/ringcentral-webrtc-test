@@ -1,8 +1,10 @@
 import RingCentral from '@rc-ex/core';
 import { v4 as uuid } from 'uuid';
+import EventEmitter from 'manate/event-emitter';
 
 import store from './store';
-import { RequestSipMessage } from './sip-message';
+import { InboundSipMessage, RequestSipMessage } from './sip-message';
+import { generateAuthorization } from './utils';
 
 export const createPhone = async () => {
   store.messages.push('Creating phone...');
@@ -27,8 +29,11 @@ export const createPhone = async () => {
     store.messages.push('WebSocket opened');
     onOpen();
   });
+
+  const eventEmitter = new EventEmitter();
   ws.addEventListener('message', (e: any) => {
     store.messages.push('Receiving...\n' + e.data);
+    eventEmitter.emit(InboundSipMessage.fromString(e.data));
   });
   const temp = ws.send.bind(ws);
   ws.send = (arg: any) => {
@@ -49,5 +54,18 @@ export const createPhone = async () => {
       Via: `SIP/2.0/WSS ${fakeDomain};branch=${branch()}`,
     });
     ws.send(requestSipMessage.toString());
+    eventEmitter.on((inboundSipMessage: InboundSipMessage) => {
+      if (inboundSipMessage.headers.CSeq !== requestSipMessage.headers.CSeq) {
+        return;
+      }
+      const wwwAuth = inboundSipMessage!.headers['Www-Authenticate'] || inboundSipMessage!.headers['WWW-Authenticate'];
+      if (wwwAuth && wwwAuth.includes(', nonce="')) {
+        // authorization required
+        const nonce = wwwAuth.match(/, nonce="(.+?)"/)![1];
+        const newMessage = requestSipMessage.fork();
+        newMessage.headers.Authorization = generateAuthorization(sipInfo, 'REGISTER', nonce!);
+        ws.send(newMessage.toString());
+      }
+    });
   };
 };

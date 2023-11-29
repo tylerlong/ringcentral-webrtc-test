@@ -1,3 +1,4 @@
+import type SipInfoResponse from '@rc-ex/core/lib/definitions/SipInfoResponse';
 import md5 from 'blueimp-md5';
 import { v4 as uuid } from 'uuid';
 
@@ -24,14 +25,7 @@ const realm = 'sip.ringcentral.com'
 const method = 'REGISTER'
 const nonce = 'yyyyyy'
 */
-export interface SipInfo {
-  authorizationId: string;
-  password: string;
-  domain: string;
-  username: string;
-  outboundProxy: string;
-}
-export const generateAuthorization = (sipInfo: SipInfo, method: string, nonce: string) => {
+export const generateAuthorization = (sipInfo: SipInfoResponse, method: string, nonce: string) => {
   const { authorizationId: username, password, domain: realm } = sipInfo;
   return `Digest algorithm=MD5, username="${username}", realm="${realm}", nonce="${nonce}", uri="sip:${realm}", response="${generateResponse(
     username,
@@ -48,7 +42,13 @@ Sample output:
 Proxy-Authorization: Digest algorithm=MD5, username="802396666666", realm="sip.ringcentral.com", nonce="yyyyyyy", uri="sip:+16508888888@sip.ringcentral.com", response="zzzzzzzzz"
 */
 // eslint-disable-next-line max-params
-export const generateProxyAuthorization = (sipInfo: SipInfo, method: string, targetUser: string, nonce: string) => {
+export const generateProxyAuthorization = (
+  sipInfo: SipInfoResponse,
+  method: string,
+  targetUser: string,
+  nonce: string,
+  // eslint-disable-next-line max-params
+) => {
   const { authorizationId: username, password, domain: realm } = sipInfo;
   return `Digest algorithm=MD5, username="${username}", realm="${realm}", nonce="${nonce}", uri="sip:${targetUser}@${realm}", response="${generateResponse(
     username,
