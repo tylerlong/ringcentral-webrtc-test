@@ -4,7 +4,7 @@ import EventEmitter from 'manate/event-emitter';
 
 import store from './store';
 import type { OutboundMessage } from './sip-message';
-import { InboundMessage, RequestMessage } from './sip-message';
+import { InboundMessage, RequestMessage, ResponseMessage } from './sip-message';
 import { branch, generateAuthorization } from './utils';
 
 export const createPhone = async () => {
@@ -80,4 +80,26 @@ export const createPhone = async () => {
     newMessage.headers.Authorization = generateAuthorization(sipInfo, 'REGISTER', nonce);
     send(newMessage);
   };
+
+  eventEmitter.on(async (inboundMessage: InboundMessage) => {
+    if (inboundMessage.subject.startsWith('INVITE sip:')) {
+      const peerConnection = new RTCPeerConnection();
+      await peerConnection.setRemoteDescription({
+        sdp: inboundMessage.body,
+        type: 'offer',
+      });
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      const newMessage = new ResponseMessage(
+        inboundMessage,
+        200,
+        {
+          Contact: `<sip:${fakeEmail};transport=ws>`,
+          'Content-Type': 'application/sdp',
+        },
+        peerConnection.localDescription!.sdp,
+      );
+      send(newMessage);
+    }
+  });
 };
