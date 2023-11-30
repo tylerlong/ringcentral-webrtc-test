@@ -1,5 +1,4 @@
 import RingCentral from '@rc-ex/core';
-import waitFor from 'wait-for-async';
 
 import Softphone from './softphone';
 
@@ -19,8 +18,9 @@ const main = async () => {
   });
   await softphone.register();
   softphone.on('invite', async (inviteMessage) => {
-    await waitFor({ interval: 1000 });
-    softphone.answer(inviteMessage);
+    setTimeout(() => {
+      softphone.answer(inviteMessage);
+    }, 1000);
   });
   softphone.on('track', (track) => {
     console.log('got track');

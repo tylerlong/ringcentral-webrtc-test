@@ -10,6 +10,7 @@ import { generateAuthorization } from './utils';
 
 class Softphone extends EventEmitter {
   public rc: RingCentral;
+  public rtcPeerConnectionFactory: () => RTCPeerConnection;
   public sipInfo: SipInfoResponse;
   public ws: WebSocket;
   public fakeDomain = uuid() + '.invalid';
@@ -17,9 +18,10 @@ class Softphone extends EventEmitter {
   public fromTag = uuid();
   public callId = uuid();
 
-  public constructor(rc: RingCentral) {
+  public constructor(rc: RingCentral, rtcPeerConnectionFactory = () => new RTCPeerConnection()) {
     super();
     this.rc = rc;
+    this.rtcPeerConnectionFactory = rtcPeerConnectionFactory;
   }
   public async register() {
     const r = await this.rc
@@ -90,7 +92,7 @@ class Softphone extends EventEmitter {
   }
 
   public async answer(inviteMessage: InboundMessage) {
-    const peerConnection = new RTCPeerConnection();
+    const peerConnection = this.rtcPeerConnectionFactory();
     peerConnection.addEventListener('track', (e: any) => {
       this.emit('track', e);
     });
