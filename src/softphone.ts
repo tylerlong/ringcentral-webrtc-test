@@ -2,6 +2,7 @@ import type RingCentral from '@rc-ex/core';
 import { v4 as uuid } from 'uuid';
 import type SipInfoResponse from '@rc-ex/core/lib/definitions/SipInfoResponse';
 import { EventEmitter } from 'events';
+import WebSocket from 'isomorphic-ws';
 
 import type { OutboundMessage } from './sip-message';
 import { InboundMessage, RequestMessage, ResponseMessage } from './sip-message';
@@ -91,9 +92,7 @@ class Softphone extends EventEmitter {
   public async answer(inviteMessage: InboundMessage) {
     const peerConnection = new RTCPeerConnection();
     peerConnection.addEventListener('track', (e: any) => {
-      const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
-      remoteAudio.srcObject = e.streams[0];
-      remoteAudio.play();
+      this.emit('track', e);
     });
     await peerConnection.setRemoteDescription({
       sdp: inviteMessage.body,

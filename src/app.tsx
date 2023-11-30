@@ -29,6 +29,11 @@ const App = (props: { store: Store }) => {
       softphone.on('invite', (inviteMessage) => {
         props.store.inviteMessage = inviteMessage;
       });
+      softphone.on('track', (track) => {
+        const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
+        remoteAudio.srcObject = track.streams[0];
+        remoteAudio.play();
+      });
     };
     initSoftphone();
   }, []);
