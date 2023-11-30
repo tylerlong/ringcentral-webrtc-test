@@ -15,3 +15,4 @@
 ## Todo
 
 - Revoke Softphone
+- Auto refresh register
