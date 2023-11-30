@@ -1,5 +1,5 @@
 import RingCentral from '@rc-ex/core';
-import { RTCPeerConnection } from 'werift';
+import { RTCPeerConnection, RtpPacket } from 'werift';
 
 import Softphone from './softphone';
 
@@ -14,6 +14,17 @@ const main = async () => {
     const rtcPeerConntion = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
     });
+    setTimeout(() => {
+      console.log(rtcPeerConntion.dtlsTransports.length);
+      const dtlsTransport = rtcPeerConntion.dtlsTransports[0];
+      dtlsTransport.iceTransport.connection.onData.subscribe((data) => {
+        console.log('got data');
+        console.log(data);
+        const dec = dtlsTransport.srtp.decrypt(data);
+        const rtp = RtpPacket.deSerialize(dec);
+        console.log(rtp);
+      });
+    }, 2000);
     return rtcPeerConntion as any;
   });
   softphone.on('wsMessage', (message) => {

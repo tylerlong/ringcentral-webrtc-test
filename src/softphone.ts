@@ -96,9 +96,15 @@ class Softphone extends EventEmitter {
     peerConnection.addEventListener('track', (e: any) => {
       this.emit('track', e);
     });
+    let sdp = inviteMessage.body;
+
+    // workaround https://github.com/shinyoshiaki/werift-webrtc/issues/355
+    // I think set IP to 0.0.0.0 works too
+    const IP = sdp.match(/c=IN IP4 [\d.]+/)[0];
+    sdp = sdp.replace(/a=rtcp:\d+/, `$& ${IP.substring(2)}`);
+
     await peerConnection.setRemoteDescription({
-      // sdp: inviteMessage.body,
-      sdp: inviteMessage.body.replace(/a=rtcp:\d+/, '$& IN IP4 0.0.0.0'), // for werift https://github.com/shinyoshiaki/werift-webrtc/issues/355
+      sdp,
       type: 'offer',
     });
     const answer = await peerConnection.createAnswer();

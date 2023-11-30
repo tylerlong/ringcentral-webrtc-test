@@ -6,7 +6,8 @@
   "scripts": {
     "lint": "eslint --fix '**/*.{ts,tsx,js,jsx}' && prettier --write . && sort-package-json",
     "serve": "rm -rf .parcel-cache docs && parcel src/index.html --dist-dir docs --no-hmr",
-    "test": "tsx -r dotenv-override-true/config src/test-werift.ts"
+    "test": "tsx -r dotenv-override-true/config src/test-werift.ts",
+    "temp": "tsx src/temp.ts"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
