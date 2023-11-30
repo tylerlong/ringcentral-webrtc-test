@@ -89,9 +89,7 @@ class Softphone extends EventEmitter {
   }
 
   public async answer(inviteMessage: InboundMessage) {
-    const peerConnection = new RTCPeerConnection({
-      iceServers: this.sipInfo.stunServers.map((s) => ({ urls: `stun:${s}` })), // todo: this line is optional?
-    });
+    const peerConnection = new RTCPeerConnection();
     peerConnection.addEventListener('track', (e: any) => {
       const remoteAudio = document.getElementById('remoteAudio') as HTMLAudioElement;
       remoteAudio.srcObject = e.streams[0];

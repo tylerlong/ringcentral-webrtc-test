@@ -11,17 +11,7 @@ const generateResponse = (sipInfo: SipInfoResponse, method: string, nonce: strin
   return response;
 };
 
-/*
-Sample input:
-const sipInfo = {
-  "password": "Li12x8E",
-  "authorizationId": "801559893004",
-  "domain": "sip.devtest.ringcentral.com",
-}
-const method = 'REGISTER'
-const nonce = 'ZWaikWVmoWVk71y4c8akwQ5yWzg/ZNiV'
-*/
-export const generateAuthorization = (sipInfo: SipInfoResponse, method: string, nonce: string) => {
+export const generateAuthorization = (sipInfo: SipInfoResponse, method: 'REGISTER', nonce: string) => {
   const response = generateResponse(sipInfo, method, nonce);
   return `Digest algorithm=MD5, username="${sipInfo.authorizationId}", realm="${sipInfo.domain}", nonce="${nonce}", uri="sip:${sipInfo.domain}", response="${response}"`;
 };
