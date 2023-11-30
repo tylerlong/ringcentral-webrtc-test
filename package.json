@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --fix '**/*.{ts,tsx,js,jsx}' && prettier --write . && sort-package-json",
     "serve": "rm -rf .parcel-cache docs && parcel src/index.html --dist-dir docs --no-hmr",
-    "test": "tsx -r dotenv-override-true/config src/test.ts"
+    "test": "tsx -r dotenv-override-true/config src/test-werift.ts"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -35,6 +35,7 @@
     "tsx": "^4.6.1",
     "ttpt": "^0.8.0",
     "typescript": "^5.3.2",
+    "werift": "^0.18.13",
     "ws": "^8.14.2",
     "yarn-upgrade-all": "^0.7.2"
   },

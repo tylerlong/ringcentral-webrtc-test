@@ -97,7 +97,8 @@ class Softphone extends EventEmitter {
       this.emit('track', e);
     });
     await peerConnection.setRemoteDescription({
-      sdp: inviteMessage.body,
+      // sdp: inviteMessage.body,
+      sdp: inviteMessage.body.replace(/a=rtcp:\d+/, '$& IN IP4 0.0.0.0'), // for werift https://github.com/shinyoshiaki/werift-webrtc/issues/355
       type: 'offer',
     });
     const answer = await peerConnection.createAnswer();

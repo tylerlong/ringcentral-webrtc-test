@@ -16,3 +16,6 @@
 
 - Revoke Softphone
 - Auto refresh register
+- Pending issues:
+  - node-datachannel: cannot answer the call. after reply to invite, server will BYE
+  - werift: can answer the call, but no track coming.
