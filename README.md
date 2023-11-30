@@ -19,3 +19,4 @@
 - Pending issues:
   - node-datachannel: cannot answer the call. after reply to invite, server will BYE
   - werift: can answer the call, but no track coming.
+    - enable debug mode helps: env var: DEBUG=werift*

@@ -17,7 +17,12 @@ const App = (props: { store: Store }) => {
         clientSecret: process.env.RINGCENTRAL_CLIENT_SECRET,
       });
       await rc.authorize({ jwt: process.env.RINGCENTRAL_JWT_TOKEN });
-      const softphone = new Softphone(rc);
+      const softphone = new Softphone(rc, () => {
+        const rtcPeerConntion = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        });
+        return rtcPeerConntion as any;
+      });
       softphone.on('wsMessage', (message) => {
         console.log('Receiving...\n' + message);
       });
