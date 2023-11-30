@@ -1,5 +1,5 @@
 import OutboundMessage from '.';
-import { branch } from '../../utils';
+import { v4 as uuid } from 'uuid';
 
 let cseq = Math.floor(Math.random() * 10000);
 
@@ -22,7 +22,7 @@ class RequestMessage extends OutboundMessage {
     const newMessage = new RequestMessage(this.subject, { ...this.headers }, this.body);
     newMessage.newCseq();
     if (newMessage.headers.Via) {
-      newMessage.headers.Via = newMessage.headers.Via.replace(/;branch=z9hG4bK.+?$/, `;branch=${branch()}`);
+      newMessage.headers.Via = newMessage.headers.Via.replace(/;branch=.+?$/, `;branch=${uuid()}`);
     }
     return newMessage;
   }

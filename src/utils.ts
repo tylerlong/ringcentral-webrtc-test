@@ -1,5 +1,4 @@
 import type SipInfoResponse from '@rc-ex/core/lib/definitions/SipInfoResponse';
-import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 
 const md5 = (s: string) => crypto.createHash('md5').update(s).digest('hex');
@@ -12,8 +11,15 @@ const generateResponse = (sipInfo: SipInfoResponse, method: string, nonce: strin
 };
 
 export const generateAuthorization = (sipInfo: SipInfoResponse, method: 'REGISTER', nonce: string) => {
-  const response = generateResponse(sipInfo, method, nonce);
-  return `Digest algorithm=MD5, username="${sipInfo.authorizationId}", realm="${sipInfo.domain}", nonce="${nonce}", uri="sip:${sipInfo.domain}", response="${response}"`;
+  const authObj = {
+    'Digest algorithm': 'MD5',
+    username: sipInfo.authorizationId,
+    realm: sipInfo.domain,
+    nonce,
+    uri: `sip:${sipInfo.domain}`,
+    response: generateResponse(sipInfo, method, nonce),
+  };
+  return Object.keys(authObj)
+    .map((key) => `${key}="${authObj[key]}"`)
+    .join(', ');
 };
-
-export const branch = () => 'z9hG4bK' + uuid();

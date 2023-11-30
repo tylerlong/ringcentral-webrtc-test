@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 
 import type { OutboundMessage } from './sip-message';
 import { InboundMessage, RequestMessage, ResponseMessage } from './sip-message';
-import { branch, generateAuthorization } from './utils';
+import { generateAuthorization } from './utils';
 
 class Softphone extends EventEmitter {
   public rc: RingCentral;
@@ -50,7 +50,7 @@ class Softphone extends EventEmitter {
         Contact: `<sip:${this.fakeEmail};transport=ws>;expires=600`,
         From: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>;tag=${this.fromTag}`,
         To: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>`,
-        Via: `SIP/2.0/WSS ${this.fakeDomain};branch=${branch()}`,
+        Via: `SIP/2.0/WSS ${this.fakeDomain};branch=${uuid()}`,
       });
       const inboundMessage = await this.send(requestMessage);
       const wwwAuth = inboundMessage.headers['Www-Authenticate'] || inboundMessage!.headers['WWW-Authenticate'];
