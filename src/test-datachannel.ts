@@ -1,3 +1,7 @@
+/*
+Limitation of the node-datachannel library: no way to get media from track.
+I would like to try the C++ library
+*/
 import RingCentral from '@rc-ex/core';
 import WebSocket from 'isomorphic-ws';
 import { v4 as uuid } from 'uuid';
@@ -89,10 +93,11 @@ const main = async () => {
     invite = true;
     const peerConnection = new nodeDataChannel.PeerConnection('callee', {
       iceServers: ['stun:stun.l.google.com:19302'],
-      disableAutoNegotiation: true,
     });
+
     const audio = new nodeDataChannel.Audio('audio', 'RecvOnly' as any);
-    audio.addAudioCodec(111, 'OPUS/48000/2');
+    audio.addAudioCodec(0, 'PCMU/8000');
+    audio.addSSRC(8888, 'audio-receive');
     // audio.setBitrate(64000);
     const track = peerConnection.addTrack(audio);
     const session = new nodeDataChannel.RtcpReceivingSession();
@@ -100,11 +105,20 @@ const main = async () => {
     track.onMessage(() => {
       console.log('audio message');
     });
+
     peerConnection.onStateChange((state) => {
       console.log('State: ', state);
     });
+    peerConnection.onTrack((track) => {
+      console.log('Track: ', track);
+      console.log(track);
+      const session = new nodeDataChannel.RtcpReceivingSession();
+      track.setMediaHandler(session);
+      track.onMessage(() => {
+        console.log('audio message');
+      });
+    });
     peerConnection.setRemoteDescription(inboundMessage.body, 'offer' as any);
-    peerConnection.setLocalDescription('answer' as any);
     peerConnection.onGatheringStateChange((state) => {
       console.log('GatheringState: ', state);
       if (state === 'complete') {
