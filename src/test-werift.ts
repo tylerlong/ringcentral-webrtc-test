@@ -1,5 +1,10 @@
+/*
+得到的声音质量很差，背景噪音大。
+我觉得是时间的问题。因为 RTP 包都有时间戳的。简单的 append 在一起，时间和数据上可能对不上，导致大的噪音。
+更新：其实得到的音频是没问题的，是播放方式有问题。可以这么播放：play -b 8 -r 8000 -e mu-law test.raw
+*/
 import RingCentral from '@rc-ex/core';
-import { RTCPeerConnection, RTCRtpCodecParameters, RtpPacket } from 'werift';
+import { RTCPeerConnection, RTCRtpCodecParameters, RtpPacket, isRtcp, isMedia } from 'werift';
 
 import Softphone from './softphone';
 import fs from 'fs';
@@ -62,18 +67,24 @@ const main = async () => {
     // });
 
     setTimeout(() => {
-      console.log(rtcPeerConntion.dtlsTransports.length);
       const dtlsTransport = rtcPeerConntion.dtlsTransports[0];
       if (fs.existsSync('test.raw')) {
         fs.unlinkSync('test.raw');
       }
       const writeStream = fs.createWriteStream('test.raw', { flags: 'a' });
       dtlsTransport.iceTransport.connection.onData.subscribe((data) => {
-        console.log('got data');
+        if (!isMedia(data)) {
+          console.log('is not media');
+          return;
+        }
+        if (isRtcp(data)) {
+          console.log('is rtcp'); // never invoked
+          return;
+        }
+        console.log('got media RTP');
         // console.log(data);
         const dec = dtlsTransport.srtp.decrypt(data);
         const rtp = RtpPacket.deSerialize(dec);
-        console.log(rtp);
         // console.log(rtp);
         writeStream.write(rtp.payload);
       });
